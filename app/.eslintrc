@@ -1,0 +1,8 @@
+{
+  "extends": ["bambi/web", "bambi/node"],
+  "rules": {
+    "prettier/prettier": "error",
+    "flowtype/type-id-match": [0, ""],
+    "no-console": ["error", { "allow": ["warn", "error"] }]
+  }
+}
