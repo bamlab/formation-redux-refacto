@@ -6,9 +6,10 @@ import { withStyles } from '@material-ui/core/styles';
 import Appbar from './components/Appbar';
 import Drawer from './components/Drawer';
 import './App.css';
-import MovieList from './pages/MovieList';
+import MoviePage from './pages/MoviePage';
+import FavoritesPage from './pages/FavoritesPage';
 import CommentPage from './pages/CommentsPage';
-import { fetchMovies } from './stores/Movies';
+import { fetchMovies, fetchFavorites } from './stores/Movies';
 import { fetchComments } from './stores/Comments';
 import { fetchUsers } from './stores/Users';
 
@@ -16,6 +17,8 @@ type Props = {
   classes: Object,
   fetchMovies: () => any,
   fetchComments: () => any,
+  fetchUsers: () => any,
+  fetchFavorites: () => any,
 };
 
 class App extends Component<Props> {
@@ -23,6 +26,7 @@ class App extends Component<Props> {
     this.props.fetchMovies();
     this.props.fetchComments();
     this.props.fetchUsers();
+    this.props.fetchFavorites();
   }
 
   render() {
@@ -34,7 +38,8 @@ class App extends Component<Props> {
           <Drawer />
           <div className={classes.container}>
             <Switch>
-              <Route path="/" component={MovieList} exact />
+              <Route path="/" component={MoviePage} exact />
+              <Route path="/favorites" component={FavoritesPage} exact />
               <Route path="/comments" component={CommentPage} exact />
             </Switch>
           </div>
@@ -57,7 +62,7 @@ const styles = theme => ({
   },
 });
 
-const mapDispatchToProps = { fetchMovies, fetchComments, fetchUsers };
+const mapDispatchToProps = { fetchMovies, fetchComments, fetchUsers, fetchFavorites };
 export default connect(
   undefined,
   mapDispatchToProps

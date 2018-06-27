@@ -43,7 +43,31 @@ type FetchErrorAction = {
   error: boolean,
 };
 
-type Action = FetchAction | FetchSuccessAction | FetchErrorAction;
+type FetchFavoritesAction = {
+  type: 'FETCH_FAVORITES',
+};
+
+type FetchFavoritesSuccessAction = {
+  type: 'FETCH_FAVORITES_SUCCESS',
+  payload: number[],
+  meta: {
+    entities: { movies: MovieMap },
+  },
+};
+
+type FetchFavoritesErrorAction = {
+  type: 'FETCH_FAVORITES_ERROR',
+  payload: Error,
+  error: boolean,
+};
+
+type Action =
+  | FetchAction
+  | FetchSuccessAction
+  | FetchErrorAction
+  | FetchFavoritesAction
+  | FetchFavoritesSuccessAction
+  | FetchFavoritesErrorAction;
 
 export const fetchMovies = (): FetchAction => ({
   type: 'FETCH_MOVIES',
@@ -63,6 +87,24 @@ const fetchMoviesError = (error: Error): FetchErrorAction => ({
   error: true,
 });
 
+export const fetchFavorites = (): FetchFavoritesAction => ({
+  type: 'FETCH_FAVORITES',
+});
+
+const fetchFavoritesSuccess = (normalizedResults: any): FetchFavoritesSuccessAction => ({
+  type: 'FETCH_FAVORITES_SUCCESS',
+  payload: normalizedResults.result,
+  meta: {
+    entities: normalizedResults.entities,
+  },
+});
+
+const fetchFavoritesError = (error: Error): FetchFavoritesErrorAction => ({
+  type: 'FETCH_FAVORITES_ERROR',
+  payload: error,
+  error: true,
+});
+
 // REDUCER
 
 type State = $ReadOnly<{
@@ -70,6 +112,9 @@ type State = $ReadOnly<{
   list: number[],
   isListLoading: boolean,
   listError: ?Error,
+  favorites: number[],
+  isFavLoading: boolean,
+  listFavError: ?Error,
 }>;
 
 const initialState: State = {
@@ -77,6 +122,9 @@ const initialState: State = {
   list: [],
   isListLoading: false,
   listError: null,
+  favorites: [],
+  isFavLoading: false,
+  listFavError: null,
 };
 
 export default function reducer(state: State = initialState, action: Action): State {
@@ -104,6 +152,29 @@ export default function reducer(state: State = initialState, action: Action): St
         isListLoading: false,
         listError: action.payload,
       };
+    case 'FETCH_FAVORITES':
+      return {
+        ...state,
+        isFavLoading: true,
+        listFavError: null,
+      };
+    case 'FETCH_FAVORITES_SUCCESS':
+      return {
+        ...state,
+        entities: {
+          ...state.entities,
+          ...action.meta.entities.movies,
+        },
+        favorites: action.payload,
+        isFavLoading: false,
+        listFavError: null,
+      };
+    case 'FETCH_FAVORITES_ERROR':
+      return {
+        ...state,
+        isFavLoading: false,
+        listFavError: action.payload,
+      };
     default:
       return state;
   }
@@ -116,11 +187,19 @@ type GlobalState = { [typeof MODULE_KEY]: State };
 
 const movieMapSelector = (state: GlobalState): MovieMap => state[MODULE_KEY].entities;
 const movieIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].list;
+const favoritesIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].favorites;
 export const movieByIdSelector = (state: GlobalState, id: number): ?Movie =>
   state[MODULE_KEY].entities[id];
 
 export const moviesSelector = createSelector(
   [movieMapSelector, movieIdsSelector],
+  (entities: MovieMap, ids: number[]) => {
+    return ids.map(id => entities[id]);
+  }
+);
+
+export const favoritesSelector = createSelector(
+  [movieMapSelector, favoritesIdsSelector],
   (entities: MovieMap, ids: number[]) => {
     return ids.map(id => entities[id]);
   }
@@ -140,6 +219,19 @@ function* fetchMoviesSaga(): Generator<*, *, *> {
   }
 }
 
+function* fetchFavoritesSaga(): Generator<*, *, *> {
+  try {
+    const response = yield call(axios, 'http://localhost:3000/users/1/favorites');
+    const normalizedMovies = normalize(response.data, moviesSchema);
+    yield put(fetchFavoritesSuccess(normalizedMovies));
+  } catch (e) {
+    yield put(fetchFavoritesError(e));
+  }
+}
+
 export function* saga(): Generator<*, *, *> {
-  yield all([takeEvery('FETCH_MOVIES', fetchMoviesSaga)]);
+  yield all([
+    takeEvery('FETCH_MOVIES', fetchMoviesSaga),
+    takeEvery('FETCH_FAVORITES', fetchFavoritesSaga),
+  ]);
 }

@@ -22,6 +22,4 @@ class MovieList extends React.PureComponent<Props> {
     );
   }
 }
-
-const mapStateToProps = state => ({ movies: moviesSelector(state) });
-export default connect(mapStateToProps)(MovieList);
+export default MovieList;
