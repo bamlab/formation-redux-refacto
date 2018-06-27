@@ -1,24 +1,45 @@
+// @flow
 import React, { Component } from 'react';
 import { Route, Switch, BrowserRouter as Router } from 'react-router-dom';
+import { connect } from 'react-redux';
 import { withStyles } from '@material-ui/core/styles';
 import Appbar from './components/Appbar';
 import Drawer from './components/Drawer';
 import './App.css';
 import MovieList from './pages/MovieList';
+import CommentPage from './pages/CommentsPage';
+import { fetchMovies } from './stores/Movies';
+import { fetchComments } from './stores/Comments';
+import { fetchUsers } from './stores/Users';
 
-class App extends Component {
+type Props = {
+  classes: Object,
+  fetchMovies: () => any,
+  fetchComments: () => any,
+};
+
+class App extends Component<Props> {
+  componentDidMount() {
+    this.props.fetchMovies();
+    this.props.fetchComments();
+    this.props.fetchUsers();
+  }
+
   render() {
     const { classes } = this.props;
     return (
-      <div className={classes.root}>
-        <Appbar />
-        <Drawer />
-        <Router>
-          <Switch>
-            <Route path="/" component={MovieList} exact />
-          </Switch>
-        </Router>
-      </div>
+      <Router>
+        <div className={classes.root}>
+          <Appbar title="Movie List" />
+          <Drawer />
+          <div className={classes.container}>
+            <Switch>
+              <Route path="/" component={MovieList} exact />
+              <Route path="/comments" component={CommentPage} exact />
+            </Switch>
+          </div>
+        </div>
+      </Router>
     );
   }
 }
@@ -31,13 +52,13 @@ const styles = theme => ({
     position: 'relative',
     display: 'flex',
   },
-  content: {
+  container: {
     paddingTop: 100,
-    flexGrow: 1,
-    backgroundColor: theme.palette.background.default,
-    padding: theme.spacing.unit * 3,
-    minWidth: 0, // So the Typography noWrap works
   },
 });
 
-export default withStyles(styles)(App);
+const mapDispatchToProps = { fetchMovies, fetchComments, fetchUsers };
+export default connect(
+  undefined,
+  mapDispatchToProps
+)(withStyles(styles)(App));

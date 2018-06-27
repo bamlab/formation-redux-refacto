@@ -3,6 +3,7 @@ import { createSelector } from 'reselect';
 import axios from 'axios';
 import { normalize, schema } from 'normalizr';
 import { put, all, takeEvery, call } from 'redux-saga/effects';
+import type { Comment } from './Comments';
 
 export type Movie = {
   vote_count: number,
@@ -19,6 +20,7 @@ export type Movie = {
   adult: false,
   overview: string,
   release_date: string,
+  comments: Comment[],
 };
 
 type MovieMap = { [number]: Movie };
@@ -112,9 +114,10 @@ export default function reducer(state: State = initialState, action: Action): St
 export const MODULE_KEY: 'movies' = 'movies';
 type GlobalState = { [typeof MODULE_KEY]: State };
 
-const movieMapSelector = (state: GlobalState, id: number): MovieMap => state[MODULE_KEY].entities;
-
-const movieIdsSelector = (state: GlobalState, id: number): number[] => state[MODULE_KEY].list;
+const movieMapSelector = (state: GlobalState): MovieMap => state[MODULE_KEY].entities;
+const movieIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].list;
+export const movieByIdSelector = (state: GlobalState, id: number): ?Movie =>
+  state[MODULE_KEY].entities[id];
 
 export const moviesSelector = createSelector(
   [movieMapSelector, movieIdsSelector],
@@ -128,7 +131,6 @@ export const moviesSelector = createSelector(
 const moviesSchema = new schema.Array(new schema.Entity('movies'));
 
 function* fetchMoviesSaga(): Generator<*, *, *> {
-  console.log('call');
   try {
     const response = yield call(axios, 'http://localhost:3000/movies');
     const normalizedMovies = normalize(response.data, moviesSchema);
@@ -139,6 +141,5 @@ function* fetchMoviesSaga(): Generator<*, *, *> {
 }
 
 export function* saga(): Generator<*, *, *> {
-  console.log('movies saga');
   yield all([takeEvery('FETCH_MOVIES', fetchMoviesSaga)]);
 }
