@@ -2,7 +2,14 @@
 import { createSelector } from 'reselect';
 import axios from 'axios';
 import { normalize, schema } from 'normalizr';
-import { put, all, takeEvery, call } from 'redux-saga/effects';
+import { put, all, takeEvery, call, select } from 'redux-saga/effects';
+
+const update = comment =>
+  new Promise((resolve, reject) =>
+    setTimeout(() => {
+      resolve(comment);
+    }, 1000)
+  );
 
 export type Comment = {
   id: number,
@@ -12,7 +19,6 @@ export type Comment = {
 };
 
 type CommentMap = { [number]: Comment };
-
 type FetchAction = {
   type: 'FETCH_COMMENTS',
 };
@@ -31,7 +37,35 @@ type FetchErrorAction = {
   error: boolean,
 };
 
-type Action = FetchAction | FetchSuccessAction | FetchErrorAction;
+type UpdateAction = {
+  type: 'UPDATE_COMMENT',
+  payload: {
+    id: number,
+    comment: string,
+  },
+};
+
+type UpdateSuccessAction = {
+  type: 'UPDATE_COMMENT_SUCCESS',
+  payload: number[],
+  meta: {
+    entities: { comments: CommentMap },
+  },
+};
+
+type UpdateErrorAction = {
+  type: 'UPDATE_COMMENT_ERROR',
+  payload: Error,
+  error: boolean,
+};
+
+type Action =
+  | FetchAction
+  | FetchSuccessAction
+  | FetchErrorAction
+  | UpdateAction
+  | UpdateErrorAction
+  | UpdateSuccessAction;
 
 export const fetchComments = (): FetchAction => ({
   type: 'FETCH_COMMENTS',
@@ -47,6 +81,25 @@ const fetchCommentsSuccess = (normalizedResults: any): FetchSuccessAction => ({
 
 const fetchCommentsError = (error: Error): FetchErrorAction => ({
   type: 'FETCH_COMMENTS_ERROR',
+  payload: error,
+  error: true,
+});
+
+export const updateComment = (id: number, comment: string): UpdateAction => ({
+  type: 'UPDATE_COMMENT',
+  payload: { id, comment },
+});
+
+const updateCommentSuccess = (normalizedResults: any): UpdateSuccessAction => ({
+  type: 'UPDATE_COMMENT_SUCCESS',
+  payload: normalizedResults.result,
+  meta: {
+    entities: normalizedResults.entities,
+  },
+});
+
+const updateCommentError = (error: Error): UpdateErrorAction => ({
+  type: 'UPDATE_COMMENT_ERROR',
   payload: error,
   error: true,
 });
@@ -92,6 +145,15 @@ export default function reducer(state: State = initialState, action: Action): St
         isListLoading: false,
         listError: action.payload,
       };
+
+    case 'UPDATE_COMMENT_SUCCESS':
+      return {
+        ...state,
+        entities: {
+          ...state.entities,
+          ...action.meta.entities.comments,
+        },
+      };
     default:
       return state;
   }
@@ -104,6 +166,8 @@ type GlobalState = { [typeof MODULE_KEY]: State };
 
 const commentMapSelector = (state: GlobalState): CommentMap => state[MODULE_KEY].entities;
 const commentIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].list;
+const commentByIdSelector = (state: GlobalState, id: number): ?Comment =>
+  state[MODULE_KEY].entities[id];
 
 export const commentsSelector = createSelector(
   [commentMapSelector, commentIdsSelector],
@@ -114,7 +178,8 @@ export const commentsSelector = createSelector(
 
 // SAGAS
 
-const commentsSchema = new schema.Array(new schema.Entity('comments'));
+const commentSchema = new schema.Entity('comments');
+const commentsSchema = new schema.Array(commentSchema);
 
 function* fetchCommentsSaga(): Generator<*, *, *> {
   try {
@@ -126,6 +191,24 @@ function* fetchCommentsSaga(): Generator<*, *, *> {
   }
 }
 
+function* updateCommentsSaga(action: UpdateAction): Generator<*, *, *> {
+  try {
+    const comment = yield select(commentByIdSelector, action.payload.id);
+    const response = yield call(update, {
+      ...comment,
+      text: action.payload.comment,
+    });
+
+    const normalizedComments = normalize(response, commentSchema);
+    yield put(updateCommentSuccess(normalizedComments));
+  } catch (e) {
+    yield put(updateCommentError(e));
+  }
+}
+
 export function* saga(): Generator<*, *, *> {
-  yield all([takeEvery('FETCH_COMMENTS', fetchCommentsSaga)]);
+  yield all([
+    takeEvery('FETCH_COMMENTS', fetchCommentsSaga),
+    takeEvery('UPDATE_COMMENT', updateCommentsSaga),
+  ]);
 }

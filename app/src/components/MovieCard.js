@@ -1,5 +1,6 @@
 // @flow
 import React from 'react';
+import { connect } from 'react-redux';
 import { withStyles } from '@material-ui/core/styles';
 import Card from '@material-ui/core/Card';
 import CardHeader from '@material-ui/core/CardHeader';
@@ -12,16 +13,17 @@ import red from '@material-ui/core/colors/red';
 import FavoriteIcon from '@material-ui/icons/Favorite';
 
 import CommentList from './CommentList';
-import type { Movie } from '../stores/Movies';
+import { type Movie, isFavoriteSelector } from '../stores/Movies';
 
 type Props = {
   movie: ?Movie,
   classes: Object,
+  isFavorite: boolean,
 };
 
-class RecipeReviewCard extends React.Component<Props> {
+class MovieCard extends React.Component<Props> {
   render() {
-    const { classes, movie } = this.props;
+    const { classes, movie, isFavorite } = this.props;
     if (!movie) {
       return null;
     }
@@ -36,7 +38,7 @@ class RecipeReviewCard extends React.Component<Props> {
 
         <CardActions className={classes.actions} disableActionSpacing>
           <IconButton aria-label="Add to favorites">
-            <FavoriteIcon />
+            <FavoriteIcon color={isFavorite ? 'primary' : undefined} />
           </IconButton>
         </CardActions>
         <CommentList comments={movie.comments} />
@@ -61,4 +63,6 @@ const styles = theme => ({
   },
 });
 
-export default withStyles(styles)(RecipeReviewCard);
+export default connect((state, props) => ({
+  isFavorite: isFavoriteSelector(state, props.movie.id),
+}))(withStyles(styles)(MovieCard));

@@ -205,6 +205,9 @@ export const favoritesSelector = createSelector(
   }
 );
 
+export const isFavoriteSelector = (state: GlobalState, id: number): boolean =>
+  favoritesIdsSelector(state).includes(id);
+
 // SAGAS
 
 const moviesSchema = new schema.Array(new schema.Entity('movies'));
