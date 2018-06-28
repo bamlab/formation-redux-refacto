@@ -111,6 +111,8 @@ type State = $ReadOnly<{
   list: number[],
   isListLoading: boolean,
   listError: ?Error,
+  isUpdateLoading: boolean,
+  updateError: ?Error,
 }>;
 
 const initialState: State = {
@@ -118,6 +120,8 @@ const initialState: State = {
   list: [],
   isListLoading: false,
   listError: null,
+  isUpdateLoading: false,
+  updateError: null,
 };
 
 export default function reducer(state: State = initialState, action: Action): State {
@@ -145,7 +149,12 @@ export default function reducer(state: State = initialState, action: Action): St
         isListLoading: false,
         listError: action.payload,
       };
-
+    case 'UPDATE_COMMENT':
+      return {
+        ...state,
+        isUpdateLoading: true,
+        updateError: null,
+      };
     case 'UPDATE_COMMENT_SUCCESS':
       return {
         ...state,
@@ -153,7 +162,17 @@ export default function reducer(state: State = initialState, action: Action): St
           ...state.entities,
           ...action.meta.entities.comments,
         },
+        update: action.payload,
+        isUpdateLoading: false,
+        updateError: null,
       };
+    case 'UPDATE_COMMENT_ERROR':
+      return {
+        ...state,
+        isUpdateLoading: false,
+        updateError: action.payload,
+      };
+
     default:
       return state;
   }
@@ -175,6 +194,8 @@ export const commentsSelector = createSelector(
     return ids.map(id => entities[id]);
   }
 );
+export const updateIsLoadingSelector = (state: GlobalState): boolean =>
+  state[MODULE_KEY].isUpdateLoading;
 
 // SAGAS
 

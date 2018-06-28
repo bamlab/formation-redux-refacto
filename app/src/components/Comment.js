@@ -11,8 +11,9 @@ import IconButton from '@material-ui/core/IconButton';
 import PencilIcon from '@material-ui/icons/Edit';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
+import LinearProgress from '@material-ui/core/LinearProgress';
 
-import { type Comment, updateComment } from '../stores/Comments';
+import { type Comment, updateComment, updateIsLoadingSelector } from '../stores/Comments';
 import { userByIdSelector, type User } from '../stores/Users';
 import { movieByIdSelector, type Movie } from '../stores/Movies';
 
@@ -21,6 +22,7 @@ type Props = {
   movie: Movie,
   user: User,
   updateComment: (number, string) => any,
+  updateIsLoading: boolean,
 };
 
 type State = {
@@ -58,6 +60,7 @@ class CommentComponent extends React.PureComponent<Props, State> {
             />
           )}
           <CardContent>
+            {this.props.updateIsLoading && <LinearProgress />}
             {!this.state.editting && <Typography component="p">{comment.text}</Typography>}
             {this.state.editting && (
               <div>
@@ -85,6 +88,7 @@ class CommentComponent extends React.PureComponent<Props, State> {
 const mapStateToProps = (state, props) => ({
   user: userByIdSelector(state, props.comment.user),
   movie: movieByIdSelector(state, props.comment.movie),
+  updateIsLoading: updateIsLoadingSelector(state),
 });
 export default connect(
   mapStateToProps,
