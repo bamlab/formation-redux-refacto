@@ -85,7 +85,7 @@ const fetchCommentsError = (error: Error): FetchErrorAction => ({
   error: true,
 });
 
-export const updateComment = (id: number, comment: string): UpdateAction => ({
+const updateCommentActionCreator = (id: number, comment: string): UpdateAction => ({
   type: 'UPDATE_COMMENT',
   payload: { id, comment },
 });
@@ -103,6 +103,26 @@ const updateCommentError = (error: Error): UpdateErrorAction => ({
   payload: error,
   error: true,
 });
+
+export function updateComment(id: number, text: string) {
+  return async (dispatch: Action => any, getState: () => GlobalState): Promise<Comment> => {
+    dispatch(updateCommentActionCreator(id, text));
+    try {
+      const comment = commentByIdSelector(getState(), id);
+      const response = await update({
+        ...comment,
+        text,
+      });
+
+      const normalizedComments = normalize(response, commentSchema);
+      dispatch(updateCommentSuccess(normalizedComments));
+      return response;
+    } catch (e) {
+      dispatch(updateCommentError(e));
+      throw e;
+    }
+  };
+}
 
 // REDUCER
 

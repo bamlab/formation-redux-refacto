@@ -21,7 +21,7 @@ type Props = {
   comment: Comment,
   movie: Movie,
   user: User,
-  updateComment: (number, string) => any,
+  updateComment: (number, string) => Promise<Comment>,
   updateIsLoading: boolean,
 };
 
@@ -33,8 +33,8 @@ type State = {
 class CommentComponent extends React.PureComponent<Props, State> {
   state = { editting: false, edittingValue: '' };
 
-  onConfirm = () => {
-    this.props.updateComment(this.props.comment.id, this.state.edittingValue);
+  onConfirm = async () => {
+    await this.props.updateComment(this.props.comment.id, this.state.edittingValue);
     this.stopEdit();
   };
 
