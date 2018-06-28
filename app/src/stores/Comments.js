@@ -2,6 +2,7 @@
 import { createSelector } from 'reselect';
 import axios from 'axios';
 import { normalize, schema } from 'normalizr';
+import { loaderSelector } from './modules/loading';
 
 const update = comment =>
   new Promise((resolve, reject) =>
@@ -84,9 +85,13 @@ const fetchCommentsError = (error: Error): FetchErrorAction => ({
   error: true,
 });
 
+const UPDATE_COMMENT_LOADER_NAME = 'updateComment';
 const updateCommentActionCreator = (id: number, comment: string): UpdateAction => ({
   type: 'UPDATE_COMMENT',
   payload: { id, comment },
+  meta: {
+    triggerLoader: UPDATE_COMMENT_LOADER_NAME,
+  },
 });
 
 const updateCommentSuccess = (normalizedResults: any): UpdateSuccessAction => ({
@@ -94,12 +99,16 @@ const updateCommentSuccess = (normalizedResults: any): UpdateSuccessAction => ({
   payload: normalizedResults.result,
   meta: {
     entities: normalizedResults.entities,
+    stopLoader: UPDATE_COMMENT_LOADER_NAME,
   },
 });
 
 const updateCommentError = (error: Error): UpdateErrorAction => ({
   type: 'UPDATE_COMMENT_ERROR',
   payload: error,
+  meta: {
+    stopLoader: UPDATE_COMMENT_LOADER_NAME,
+  },
   error: true,
 });
 
@@ -146,7 +155,6 @@ type State = $ReadOnly<{
   list: number[],
   isListLoading: boolean,
   listError: ?Error,
-  isUpdateLoading: boolean,
   updateError: ?Error,
 }>;
 
@@ -155,7 +163,6 @@ const initialState: State = {
   list: [],
   isListLoading: false,
   listError: null,
-  isUpdateLoading: false,
   updateError: null,
 };
 
@@ -187,7 +194,6 @@ export default function reducer(state: State = initialState, action: Action): St
     case 'UPDATE_COMMENT':
       return {
         ...state,
-        isUpdateLoading: true,
         updateError: null,
       };
     case 'UPDATE_COMMENT_SUCCESS':
@@ -197,14 +203,11 @@ export default function reducer(state: State = initialState, action: Action): St
           ...state.entities,
           ...action.meta.entities.comments,
         },
-        update: action.payload,
-        isUpdateLoading: false,
         updateError: null,
       };
     case 'UPDATE_COMMENT_ERROR':
       return {
         ...state,
-        isUpdateLoading: false,
         updateError: action.payload,
       };
 
@@ -230,4 +233,4 @@ export const commentsSelector = createSelector(
   }
 );
 export const updateIsLoadingSelector = (state: GlobalState): boolean =>
-  state[MODULE_KEY].isUpdateLoading;
+  !!loaderSelector(state, UPDATE_COMMENT_LOADER_NAME);
