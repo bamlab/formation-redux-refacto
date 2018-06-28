@@ -33,8 +33,13 @@ type FetchErrorAction = {
 
 type Action = FetchAction | FetchSuccessAction | FetchErrorAction;
 
+const FETCH_USERS = 'FETCH_USERS';
+
 const fetchUsersActionCreator = (): FetchAction => ({
   type: 'FETCH_USERS',
+  meta: {
+    triggerLoader: FETCH_USERS,
+  },
 });
 
 const fetchUsersSuccess = (normalizedResults: any): FetchSuccessAction => ({
@@ -42,6 +47,7 @@ const fetchUsersSuccess = (normalizedResults: any): FetchSuccessAction => ({
   payload: normalizedResults.result,
   meta: {
     entities: normalizedResults.entities,
+    stopLoader: FETCH_USERS,
   },
 });
 
@@ -49,6 +55,9 @@ const fetchUsersError = (error: Error): FetchErrorAction => ({
   type: 'FETCH_USERS_ERROR',
   payload: error,
   error: true,
+  meta: {
+    stopLoader: FETCH_USERS,
+  },
 });
 
 const usersSchema = new schema.Array(new schema.Entity('users'));
@@ -73,14 +82,12 @@ export function fetchUsers() {
 type State = $ReadOnly<{
   entities: UserMap,
   list: number[],
-  isListLoading: boolean,
   listError: ?Error,
 }>;
 
 const initialState: State = {
   entities: {},
   list: [],
-  isListLoading: false,
   listError: null,
 };
 
@@ -89,7 +96,6 @@ export default function reducer(state: State = initialState, action: Action): St
     case 'FETCH_USERS':
       return {
         ...state,
-        isListLoading: true,
         listError: null,
       };
     case 'FETCH_USERS_SUCCESS':
@@ -100,13 +106,11 @@ export default function reducer(state: State = initialState, action: Action): St
           ...action.meta.entities.users,
         },
         list: action.payload,
-        isListLoading: false,
         listError: null,
       };
     case 'FETCH_USERS_ERROR':
       return {
         ...state,
-        isListLoading: false,
         listError: action.payload,
       };
     default:

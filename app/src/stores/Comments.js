@@ -67,8 +67,12 @@ type Action =
   | UpdateErrorAction
   | UpdateSuccessAction;
 
+const FETCH_COMMENTS = 'fetchComments';
 const fetchCommentsActionCreator = (): FetchAction => ({
   type: 'FETCH_COMMENTS',
+  meta: {
+    triggerLoader: FETCH_COMMENTS,
+  },
 });
 
 const fetchCommentsSuccess = (normalizedResults: any): FetchSuccessAction => ({
@@ -76,12 +80,16 @@ const fetchCommentsSuccess = (normalizedResults: any): FetchSuccessAction => ({
   payload: normalizedResults.result,
   meta: {
     entities: normalizedResults.entities,
+    stopLoader: FETCH_COMMENTS,
   },
 });
 
 const fetchCommentsError = (error: Error): FetchErrorAction => ({
   type: 'FETCH_COMMENTS_ERROR',
   payload: error,
+  meta: {
+    stopLoader: FETCH_COMMENTS,
+  },
   error: true,
 });
 
@@ -153,7 +161,6 @@ export function fetchComments() {
 type State = $ReadOnly<{
   entities: CommentMap,
   list: number[],
-  isListLoading: boolean,
   listError: ?Error,
   updateError: ?Error,
 }>;
@@ -161,7 +168,6 @@ type State = $ReadOnly<{
 const initialState: State = {
   entities: {},
   list: [],
-  isListLoading: false,
   listError: null,
   updateError: null,
 };
@@ -171,7 +177,6 @@ export default function reducer(state: State = initialState, action: Action): St
     case 'FETCH_COMMENTS':
       return {
         ...state,
-        isListLoading: true,
         listError: null,
       };
     case 'FETCH_COMMENTS_SUCCESS':
@@ -182,13 +187,11 @@ export default function reducer(state: State = initialState, action: Action): St
           ...action.meta.entities.comments,
         },
         list: action.payload,
-        isListLoading: false,
         listError: null,
       };
     case 'FETCH_COMMENTS_ERROR':
       return {
         ...state,
-        isListLoading: false,
         listError: action.payload,
       };
     case 'UPDATE_COMMENT':

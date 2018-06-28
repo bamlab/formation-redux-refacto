@@ -69,8 +69,13 @@ type Action =
   | FetchFavoritesSuccessAction
   | FetchFavoritesErrorAction;
 
+const FETCH_MOVIES = 'FETCH_MOVIES';
+const FETCH_FAVORITES = 'FETCH_FAVORITES';
 const fetchMoviesActionCreator = (): FetchAction => ({
   type: 'FETCH_MOVIES',
+  meta: {
+    triggerLoader: FETCH_MOVIES,
+  },
 });
 
 const fetchMoviesSuccess = (normalizedResults: any): FetchSuccessAction => ({
@@ -78,6 +83,7 @@ const fetchMoviesSuccess = (normalizedResults: any): FetchSuccessAction => ({
   payload: normalizedResults.result,
   meta: {
     entities: normalizedResults.entities,
+    stopLoader: FETCH_MOVIES,
   },
 });
 
@@ -85,10 +91,16 @@ const fetchMoviesError = (error: Error): FetchErrorAction => ({
   type: 'FETCH_MOVIES_ERROR',
   payload: error,
   error: true,
+  meta: {
+    stopLoader: FETCH_MOVIES,
+  },
 });
 
 const fetchFavoritesActionCreator = (): FetchFavoritesAction => ({
   type: 'FETCH_FAVORITES',
+  meta: {
+    triggerLoader: FETCH_FAVORITES,
+  },
 });
 
 const fetchFavoritesSuccess = (normalizedResults: any): FetchFavoritesSuccessAction => ({
@@ -96,6 +108,7 @@ const fetchFavoritesSuccess = (normalizedResults: any): FetchFavoritesSuccessAct
   payload: normalizedResults.result,
   meta: {
     entities: normalizedResults.entities,
+    stopLoader: FETCH_FAVORITES,
   },
 });
 
@@ -103,6 +116,9 @@ const fetchFavoritesError = (error: Error): FetchFavoritesErrorAction => ({
   type: 'FETCH_FAVORITES_ERROR',
   payload: error,
   error: true,
+  meta: {
+    stopLoader: FETCH_FAVORITES,
+  },
 });
 
 const moviesSchema = new schema.Array(new schema.Entity('movies'));
@@ -141,20 +157,16 @@ export function fetchFavorites() {
 type State = $ReadOnly<{
   entities: MovieMap,
   list: number[],
-  isListLoading: boolean,
   listError: ?Error,
   favorites: number[],
-  isFavLoading: boolean,
   listFavError: ?Error,
 }>;
 
 const initialState: State = {
   entities: {},
   list: [],
-  isListLoading: false,
   listError: null,
   favorites: [],
-  isFavLoading: false,
   listFavError: null,
 };
 
@@ -163,7 +175,6 @@ export default function reducer(state: State = initialState, action: Action): St
     case 'FETCH_MOVIES':
       return {
         ...state,
-        isListLoading: true,
         listError: null,
       };
     case 'FETCH_MOVIES_SUCCESS':
@@ -174,19 +185,16 @@ export default function reducer(state: State = initialState, action: Action): St
           ...action.meta.entities.movies,
         },
         list: action.payload,
-        isListLoading: false,
         listError: null,
       };
     case 'FETCH_MOVIES_ERROR':
       return {
         ...state,
-        isListLoading: false,
         listError: action.payload,
       };
     case 'FETCH_FAVORITES':
       return {
         ...state,
-        isFavLoading: true,
         listFavError: null,
       };
     case 'FETCH_FAVORITES_SUCCESS':
@@ -197,13 +205,11 @@ export default function reducer(state: State = initialState, action: Action): St
           ...action.meta.entities.movies,
         },
         favorites: action.payload,
-        isFavLoading: false,
         listFavError: null,
       };
     case 'FETCH_FAVORITES_ERROR':
       return {
         ...state,
-        isFavLoading: false,
         listFavError: action.payload,
       };
     default:
