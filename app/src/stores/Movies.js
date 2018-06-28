@@ -69,7 +69,7 @@ type Action =
   | FetchFavoritesSuccessAction
   | FetchFavoritesErrorAction;
 
-export const fetchMovies = (): FetchAction => ({
+const fetchMoviesActionCreator = (): FetchAction => ({
   type: 'FETCH_MOVIES',
 });
 
@@ -87,7 +87,7 @@ const fetchMoviesError = (error: Error): FetchErrorAction => ({
   error: true,
 });
 
-export const fetchFavorites = (): FetchFavoritesAction => ({
+const fetchFavoritesActionCreator = (): FetchFavoritesAction => ({
   type: 'FETCH_FAVORITES',
 });
 
@@ -104,6 +104,37 @@ const fetchFavoritesError = (error: Error): FetchFavoritesErrorAction => ({
   payload: error,
   error: true,
 });
+
+const moviesSchema = new schema.Array(new schema.Entity('movies'));
+
+export function fetchMovies() {
+  return async (dispatch: Action => any, getState: () => GlobalState): Promise<Movie[]> => {
+    dispatch(fetchMoviesActionCreator());
+    try {
+      const response = await axios('http://localhost:3000/movies');
+      const normalizedMovies = normalize(response.data, moviesSchema);
+      dispatch(fetchMoviesSuccess(normalizedMovies));
+      return response.data;
+    } catch (e) {
+      dispatch(fetchMoviesError(e));
+      throw e;
+    }
+  };
+}
+export function fetchFavorites() {
+  return async (dispatch: Action => any, getState: () => GlobalState): Promise<Movie[]> => {
+    dispatch(fetchFavoritesActionCreator());
+    try {
+      const response = await axios('http://localhost:3000/users/1/favorites');
+      const normalizedMovies = normalize(response.data, moviesSchema);
+      dispatch(fetchFavoritesSuccess(normalizedMovies));
+      return response.data;
+    } catch (e) {
+      dispatch(fetchFavoritesError(e));
+      throw e;
+    }
+  };
+}
 
 // REDUCER
 
@@ -207,34 +238,3 @@ export const favoritesSelector = createSelector(
 
 export const isFavoriteSelector = (state: GlobalState, id: number): boolean =>
   favoritesIdsSelector(state).includes(id);
-
-// SAGAS
-
-const moviesSchema = new schema.Array(new schema.Entity('movies'));
-
-function* fetchMoviesSaga(): Generator<*, *, *> {
-  try {
-    const response = yield call(axios, 'http://localhost:3000/movies');
-    const normalizedMovies = normalize(response.data, moviesSchema);
-    yield put(fetchMoviesSuccess(normalizedMovies));
-  } catch (e) {
-    yield put(fetchMoviesError(e));
-  }
-}
-
-function* fetchFavoritesSaga(): Generator<*, *, *> {
-  try {
-    const response = yield call(axios, 'http://localhost:3000/users/1/favorites');
-    const normalizedMovies = normalize(response.data, moviesSchema);
-    yield put(fetchFavoritesSuccess(normalizedMovies));
-  } catch (e) {
-    yield put(fetchFavoritesError(e));
-  }
-}
-
-export function* saga(): Generator<*, *, *> {
-  yield all([
-    takeEvery('FETCH_MOVIES', fetchMoviesSaga),
-    takeEvery('FETCH_FAVORITES', fetchFavoritesSaga),
-  ]);
-}

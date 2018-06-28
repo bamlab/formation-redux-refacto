@@ -2,7 +2,6 @@
 import { createSelector } from 'reselect';
 import axios from 'axios';
 import { normalize, schema } from 'normalizr';
-import { put, all, takeEvery, call, select } from 'redux-saga/effects';
 
 const update = comment =>
   new Promise((resolve, reject) =>
@@ -67,7 +66,7 @@ type Action =
   | UpdateErrorAction
   | UpdateSuccessAction;
 
-export const fetchComments = (): FetchAction => ({
+const fetchCommentsActionCreator = (): FetchAction => ({
   type: 'FETCH_COMMENTS',
 });
 
@@ -104,6 +103,9 @@ const updateCommentError = (error: Error): UpdateErrorAction => ({
   error: true,
 });
 
+const commentSchema = new schema.Entity('comments');
+const commentsSchema = new schema.Array(commentSchema);
+
 export function updateComment(id: number, text: string) {
   return async (dispatch: Action => any, getState: () => GlobalState): Promise<Comment> => {
     dispatch(updateCommentActionCreator(id, text));
@@ -120,6 +122,19 @@ export function updateComment(id: number, text: string) {
     } catch (e) {
       dispatch(updateCommentError(e));
       throw e;
+    }
+  };
+}
+
+export function fetchComments() {
+  return async (dispatch: Action => any, getState: () => GlobalState): Promise<void> => {
+    dispatch(fetchCommentsActionCreator());
+    try {
+      const response = await axios('http://localhost:3000/users/1/comments');
+      const normalizedComments = normalize(response.data, commentsSchema);
+      dispatch(fetchCommentsSuccess(normalizedComments));
+    } catch (e) {
+      dispatch(fetchCommentsError(e));
     }
   };
 }
@@ -216,40 +231,3 @@ export const commentsSelector = createSelector(
 );
 export const updateIsLoadingSelector = (state: GlobalState): boolean =>
   state[MODULE_KEY].isUpdateLoading;
-
-// SAGAS
-
-const commentSchema = new schema.Entity('comments');
-const commentsSchema = new schema.Array(commentSchema);
-
-function* fetchCommentsSaga(): Generator<*, *, *> {
-  try {
-    const response = yield call(axios, 'http://localhost:3000/users/1/comments');
-    const normalizedComments = normalize(response.data, commentsSchema);
-    yield put(fetchCommentsSuccess(normalizedComments));
-  } catch (e) {
-    yield put(fetchCommentsError(e));
-  }
-}
-
-function* updateCommentsSaga(action: UpdateAction): Generator<*, *, *> {
-  try {
-    const comment = yield select(commentByIdSelector, action.payload.id);
-    const response = yield call(update, {
-      ...comment,
-      text: action.payload.comment,
-    });
-
-    const normalizedComments = normalize(response, commentSchema);
-    yield put(updateCommentSuccess(normalizedComments));
-  } catch (e) {
-    yield put(updateCommentError(e));
-  }
-}
-
-export function* saga(): Generator<*, *, *> {
-  yield all([
-    takeEvery('FETCH_COMMENTS', fetchCommentsSaga),
-    takeEvery('UPDATE_COMMENT', updateCommentsSaga),
-  ]);
-}

@@ -33,7 +33,7 @@ type FetchErrorAction = {
 
 type Action = FetchAction | FetchSuccessAction | FetchErrorAction;
 
-export const fetchUsers = (): FetchAction => ({
+const fetchUsersActionCreator = (): FetchAction => ({
   type: 'FETCH_USERS',
 });
 
@@ -50,6 +50,23 @@ const fetchUsersError = (error: Error): FetchErrorAction => ({
   payload: error,
   error: true,
 });
+
+const usersSchema = new schema.Array(new schema.Entity('users'));
+
+export function fetchUsers() {
+  return async (dispatch: Action => any, getState: () => GlobalState): Promise<User[]> => {
+    dispatch(fetchUsersActionCreator());
+    try {
+      const response = await axios('http://localhost:3000/users');
+      const normalizedUsers = normalize(response.data, usersSchema);
+      dispatch(fetchUsersSuccess(normalizedUsers));
+      return response.data;
+    } catch (e) {
+      dispatch(fetchUsersError(e));
+      throw e;
+    }
+  };
+}
 
 // REDUCER
 
@@ -115,19 +132,3 @@ export const usersSelector = createSelector(
 );
 
 // SAGAS
-
-const usersSchema = new schema.Array(new schema.Entity('users'));
-
-function* fetchUsersSaga(): Generator<*, *, *> {
-  try {
-    const response = yield call(axios, 'http://localhost:3000/users');
-    const normalizedUsers = normalize(response.data, usersSchema);
-    yield put(fetchUsersSuccess(normalizedUsers));
-  } catch (e) {
-    yield put(fetchUsersError(e));
-  }
-}
-
-export function* saga(): Generator<*, *, *> {
-  yield all([takeEvery('FETCH_USERS', fetchUsersSaga)]);
-}
