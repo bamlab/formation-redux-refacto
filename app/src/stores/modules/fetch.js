@@ -1,4 +1,5 @@
 // @flow
+import { normalize } from 'normalizr';
 
 export type FetchAction = {
   type: string,
@@ -28,7 +29,7 @@ type FetchErrorAction = {
 };
 
 export const fetchActionCreator = (query: string, type: string = 'FETCH_SUCCESS'): FetchAction => ({
-  type: 'FETCH',
+  type,
   meta: {
     triggerLoader: query,
     removeError: query,
@@ -61,3 +62,27 @@ export const fetchErrorActionCreator = (
     saveError: query,
   },
 });
+
+export function createFetchListThunk(
+  fetchFunction: Function,
+  query: string,
+  schema: any,
+  fetchType: string = 'FETCH',
+  fetchSuccessType: string = 'FETCH_SUCCESS',
+  fetchErrorType: string = 'FETCH_ERROR'
+) {
+  return function() {
+    return async (dispatch: Object => any): Promise<*> => {
+      dispatch(fetchActionCreator(query, fetchType));
+      try {
+        const response = await fetchFunction();
+        const normalizeEntities = normalize(response.data, schema);
+        dispatch(fetchSuccessActionCreator(normalizeEntities, query, fetchSuccessType));
+        return response.data;
+      } catch (e) {
+        dispatch(fetchErrorActionCreator(e, query, fetchErrorType));
+        throw e;
+      }
+    };
+  };
+}

@@ -6,11 +6,7 @@ import { put, all, takeEvery, call } from 'redux-saga/effects';
 import type { Comment } from './Comments';
 import { entitiesSelector, allEntitiesSelector } from './modules/entities';
 import { commentsSchema } from './Comments';
-import {
-  fetchActionCreator,
-  fetchSuccessActionCreator,
-  fetchErrorActionCreator,
-} from './modules/fetch';
+import { createFetchListThunk } from './modules/fetch';
 
 export type Movie = {
   vote_count: number,
@@ -47,50 +43,29 @@ type Action = FetchSuccessAction | FetchFavoritesSuccessAction;
 const FETCH_MOVIES = 'FETCH_MOVIES';
 const FETCH_FAVORITES = 'FETCH_FAVORITES';
 
-const fetchMoviesActionCreator = () => fetchActionCreator(FETCH_MOVIES);
-const fetchMoviesSuccess = (normalizedResults: any) =>
-  fetchSuccessActionCreator(normalizedResults, FETCH_MOVIES, 'FETCH_MOVIES_SUCCESS');
-const fetchMoviesError = (error: Error) => fetchErrorActionCreator(error, FETCH_MOVIES);
-
-const fetchFavoritesActionCreator = () => fetchActionCreator(FETCH_FAVORITES);
-const fetchFavoritesSuccess = (normalizedResults: any) =>
-  fetchSuccessActionCreator(normalizedResults, FETCH_FAVORITES, 'FETCH_FAVORITES_SUCCESS');
-const fetchFavoritesError = (error: Error) => fetchErrorActionCreator(error, FETCH_FAVORITES);
-
 const moviesSchema = new schema.Array(
   new schema.Entity('movies', {
     comments: commentsSchema,
   })
 );
 
-export function fetchMovies() {
-  return async (dispatch: Object => any, getState: () => GlobalState): Promise<Movie[]> => {
-    dispatch(fetchMoviesActionCreator());
-    try {
-      const response = await axios('http://localhost:3000/movies');
-      const normalizedMovies = normalize(response.data, moviesSchema);
-      dispatch(fetchMoviesSuccess(normalizedMovies));
-      return response.data;
-    } catch (e) {
-      dispatch(fetchMoviesError(e));
-      throw e;
-    }
-  };
-}
-export function fetchFavorites() {
-  return async (dispatch: Object => any, getState: () => GlobalState): Promise<Movie[]> => {
-    dispatch(fetchFavoritesActionCreator());
-    try {
-      const response = await axios('http://localhost:3000/users/1/favorites');
-      const normalizedMovies = normalize(response.data, moviesSchema);
-      dispatch(fetchFavoritesSuccess(normalizedMovies));
-      return response.data;
-    } catch (e) {
-      dispatch(fetchFavoritesError(e));
-      throw e;
-    }
-  };
-}
+const fetchMoviesFunction = () => axios('http://localhost:3000/movies');
+export const fetchMovies = createFetchListThunk(
+  fetchMoviesFunction,
+  FETCH_MOVIES,
+  moviesSchema,
+  'FETCH_MOVIES',
+  'FETCH_MOVIES_SUCCESS'
+);
+
+const fetchFavoritesFunction = () => axios('http://localhost:3000/users/1/favorites');
+export const fetchFavorites = createFetchListThunk(
+  fetchFavoritesFunction,
+  FETCH_FAVORITES,
+  moviesSchema,
+  'FETCH_FAVORITES',
+  'FETCH_FAVORITES_SUCCESS'
+);
 
 // REDUCER
 
