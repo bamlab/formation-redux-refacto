@@ -82,22 +82,15 @@ export function fetchUsers() {
 type State = $ReadOnly<{
   entities: UserMap,
   list: number[],
-  listError: ?Error,
 }>;
 
 const initialState: State = {
   entities: {},
   list: [],
-  listError: null,
 };
 
 export default function reducer(state: State = initialState, action: Action): State {
   switch (action.type) {
-    case 'FETCH_USERS':
-      return {
-        ...state,
-        listError: null,
-      };
     case 'FETCH_USERS_SUCCESS':
       return {
         ...state,
@@ -106,12 +99,6 @@ export default function reducer(state: State = initialState, action: Action): St
           ...action.meta.entities.users,
         },
         list: action.payload,
-        listError: null,
-      };
-    case 'FETCH_USERS_ERROR':
-      return {
-        ...state,
-        listError: action.payload,
       };
     default:
       return state;

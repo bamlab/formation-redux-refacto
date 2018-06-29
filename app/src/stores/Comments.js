@@ -161,24 +161,15 @@ export function fetchComments() {
 type State = $ReadOnly<{
   entities: CommentMap,
   list: number[],
-  listError: ?Error,
-  updateError: ?Error,
 }>;
 
 const initialState: State = {
   entities: {},
   list: [],
-  listError: null,
-  updateError: null,
 };
 
 export default function reducer(state: State = initialState, action: Action): State {
   switch (action.type) {
-    case 'FETCH_COMMENTS':
-      return {
-        ...state,
-        listError: null,
-      };
     case 'FETCH_COMMENTS_SUCCESS':
       return {
         ...state,
@@ -187,17 +178,6 @@ export default function reducer(state: State = initialState, action: Action): St
           ...action.meta.entities.comments,
         },
         list: action.payload,
-        listError: null,
-      };
-    case 'FETCH_COMMENTS_ERROR':
-      return {
-        ...state,
-        listError: action.payload,
-      };
-    case 'UPDATE_COMMENT':
-      return {
-        ...state,
-        updateError: null,
       };
     case 'UPDATE_COMMENT_SUCCESS':
       return {
@@ -206,14 +186,7 @@ export default function reducer(state: State = initialState, action: Action): St
           ...state.entities,
           ...action.meta.entities.comments,
         },
-        updateError: null,
       };
-    case 'UPDATE_COMMENT_ERROR':
-      return {
-        ...state,
-        updateError: action.payload,
-      };
-
     default:
       return state;
   }

@@ -157,26 +157,17 @@ export function fetchFavorites() {
 type State = $ReadOnly<{
   entities: MovieMap,
   list: number[],
-  listError: ?Error,
   favorites: number[],
-  listFavError: ?Error,
 }>;
 
 const initialState: State = {
   entities: {},
   list: [],
-  listError: null,
   favorites: [],
-  listFavError: null,
 };
 
 export default function reducer(state: State = initialState, action: Action): State {
   switch (action.type) {
-    case 'FETCH_MOVIES':
-      return {
-        ...state,
-        listError: null,
-      };
     case 'FETCH_MOVIES_SUCCESS':
       return {
         ...state,
@@ -185,17 +176,6 @@ export default function reducer(state: State = initialState, action: Action): St
           ...action.meta.entities.movies,
         },
         list: action.payload,
-        listError: null,
-      };
-    case 'FETCH_MOVIES_ERROR':
-      return {
-        ...state,
-        listError: action.payload,
-      };
-    case 'FETCH_FAVORITES':
-      return {
-        ...state,
-        listFavError: null,
       };
     case 'FETCH_FAVORITES_SUCCESS':
       return {
@@ -205,12 +185,6 @@ export default function reducer(state: State = initialState, action: Action): St
           ...action.meta.entities.movies,
         },
         favorites: action.payload,
-        listFavError: null,
-      };
-    case 'FETCH_FAVORITES_ERROR':
-      return {
-        ...state,
-        listFavError: action.payload,
       };
     default:
       return state;
