@@ -3,6 +3,7 @@ import { createSelector } from 'reselect';
 import axios from 'axios';
 import { normalize, schema } from 'normalizr';
 import { loaderSelector } from './modules/loading';
+import { entitiesSelector } from './modules/entities';
 
 const update = comment =>
   new Promise((resolve, reject) =>
@@ -159,12 +160,10 @@ export function fetchComments() {
 // REDUCER
 
 type State = $ReadOnly<{
-  entities: CommentMap,
   list: number[],
 }>;
 
 const initialState: State = {
-  entities: {},
   list: [],
 };
 
@@ -173,19 +172,7 @@ export default function reducer(state: State = initialState, action: Action): St
     case 'FETCH_COMMENTS_SUCCESS':
       return {
         ...state,
-        entities: {
-          ...state.entities,
-          ...action.meta.entities.comments,
-        },
         list: action.payload,
-      };
-    case 'UPDATE_COMMENT_SUCCESS':
-      return {
-        ...state,
-        entities: {
-          ...state.entities,
-          ...action.meta.entities.comments,
-        },
       };
     default:
       return state;
@@ -197,7 +184,7 @@ export default function reducer(state: State = initialState, action: Action): St
 export const MODULE_KEY: 'comments' = 'comments';
 type GlobalState = { [typeof MODULE_KEY]: State };
 
-const commentMapSelector = (state: GlobalState): CommentMap => state[MODULE_KEY].entities;
+const commentMapSelector = (state: GlobalState): CommentMap => entitiesSelector(state, 'comments');
 const commentIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].list;
 const commentByIdSelector = (state: GlobalState, id: number): ?Comment =>
   state[MODULE_KEY].entities[id];

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { normalize, schema } from 'normalizr';
 import { put, all, takeEvery, call } from 'redux-saga/effects';
 import type { Comment } from './Comments';
+import { entitiesSelector } from './modules/entities';
 
 export type Movie = {
   vote_count: number,
@@ -155,13 +156,11 @@ export function fetchFavorites() {
 // REDUCER
 
 type State = $ReadOnly<{
-  entities: MovieMap,
   list: number[],
   favorites: number[],
 }>;
 
 const initialState: State = {
-  entities: {},
   list: [],
   favorites: [],
 };
@@ -171,19 +170,11 @@ export default function reducer(state: State = initialState, action: Action): St
     case 'FETCH_MOVIES_SUCCESS':
       return {
         ...state,
-        entities: {
-          ...state.entities,
-          ...action.meta.entities.movies,
-        },
         list: action.payload,
       };
     case 'FETCH_FAVORITES_SUCCESS':
       return {
         ...state,
-        entities: {
-          ...state.entities,
-          ...action.meta.entities.movies,
-        },
         favorites: action.payload,
       };
     default:
@@ -196,11 +187,11 @@ export default function reducer(state: State = initialState, action: Action): St
 export const MODULE_KEY: 'movies' = 'movies';
 type GlobalState = { [typeof MODULE_KEY]: State };
 
-const movieMapSelector = (state: GlobalState): MovieMap => state[MODULE_KEY].entities;
+const movieMapSelector = (state: GlobalState): MovieMap => entitiesSelector(state, 'movies');
 const movieIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].list;
 const favoritesIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].favorites;
 export const movieByIdSelector = (state: GlobalState, id: number): ?Movie =>
-  state[MODULE_KEY].entities[id];
+  movieMapSelector(state)[id];
 
 export const moviesSelector = createSelector(
   [movieMapSelector, movieIdsSelector],

@@ -3,6 +3,7 @@ import { createSelector } from 'reselect';
 import axios from 'axios';
 import { normalize, schema } from 'normalizr';
 import { put, all, takeEvery, call } from 'redux-saga/effects';
+import { entitiesSelector } from './modules/entities';
 
 export type User = {
   id: number,
@@ -80,12 +81,10 @@ export function fetchUsers() {
 // REDUCER
 
 type State = $ReadOnly<{
-  entities: UserMap,
   list: number[],
 }>;
 
 const initialState: State = {
-  entities: {},
   list: [],
 };
 
@@ -94,10 +93,6 @@ export default function reducer(state: State = initialState, action: Action): St
     case 'FETCH_USERS_SUCCESS':
       return {
         ...state,
-        entities: {
-          ...state.entities,
-          ...action.meta.entities.users,
-        },
         list: action.payload,
       };
     default:
@@ -110,10 +105,10 @@ export default function reducer(state: State = initialState, action: Action): St
 export const MODULE_KEY: 'users' = 'users';
 type GlobalState = { [typeof MODULE_KEY]: State };
 
-const userMapSelector = (state: GlobalState): UserMap => state[MODULE_KEY].entities;
+const userMapSelector = (state: GlobalState): CommentMap => entitiesSelector(state, 'users');
 const userIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].list;
 export const userByIdSelector = (state: GlobalState, id: number): ?User =>
-  state[MODULE_KEY].entities[id];
+  userMapSelector(state)[id];
 
 export const usersSelector = createSelector(
   [userMapSelector, userIdsSelector],
