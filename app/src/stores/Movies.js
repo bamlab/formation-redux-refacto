@@ -1,10 +1,16 @@
 // @flow
 import { createSelector } from 'reselect';
 import axios from 'axios';
-import { normalize, schema } from 'normalizr';
+import { normalize, schema, denormalize } from 'normalizr';
 import { put, all, takeEvery, call } from 'redux-saga/effects';
 import type { Comment } from './Comments';
-import { entitiesSelector } from './modules/entities';
+import { entitiesSelector, allEntitiesSelector } from './modules/entities';
+import { commentsSchema } from './Comments';
+import {
+  fetchActionCreator,
+  fetchSuccessActionCreator,
+  fetchErrorActionCreator,
+} from './modules/fetch';
 
 export type Movie = {
   vote_count: number,
@@ -26,106 +32,39 @@ export type Movie = {
 
 type MovieMap = { [number]: Movie };
 
-type FetchAction = {
-  type: 'FETCH_MOVIES',
-};
-
 type FetchSuccessAction = {
   type: 'FETCH_MOVIES_SUCCESS',
   payload: number[],
-  meta: {
-    entities: { movies: MovieMap },
-  },
-};
-
-type FetchErrorAction = {
-  type: 'FETCH_MOVIES_ERROR',
-  payload: Error,
-  error: boolean,
-};
-
-type FetchFavoritesAction = {
-  type: 'FETCH_FAVORITES',
 };
 
 type FetchFavoritesSuccessAction = {
   type: 'FETCH_FAVORITES_SUCCESS',
   payload: number[],
-  meta: {
-    entities: { movies: MovieMap },
-  },
 };
 
-type FetchFavoritesErrorAction = {
-  type: 'FETCH_FAVORITES_ERROR',
-  payload: Error,
-  error: boolean,
-};
-
-type Action =
-  | FetchAction
-  | FetchSuccessAction
-  | FetchErrorAction
-  | FetchFavoritesAction
-  | FetchFavoritesSuccessAction
-  | FetchFavoritesErrorAction;
+type Action = FetchSuccessAction | FetchFavoritesSuccessAction;
 
 const FETCH_MOVIES = 'FETCH_MOVIES';
 const FETCH_FAVORITES = 'FETCH_FAVORITES';
-const fetchMoviesActionCreator = (): FetchAction => ({
-  type: 'FETCH_MOVIES',
-  meta: {
-    triggerLoader: FETCH_MOVIES,
-  },
-});
 
-const fetchMoviesSuccess = (normalizedResults: any): FetchSuccessAction => ({
-  type: 'FETCH_MOVIES_SUCCESS',
-  payload: normalizedResults.result,
-  meta: {
-    entities: normalizedResults.entities,
-    stopLoader: FETCH_MOVIES,
-  },
-});
+const fetchMoviesActionCreator = () => fetchActionCreator(FETCH_MOVIES);
+const fetchMoviesSuccess = (normalizedResults: any) =>
+  fetchSuccessActionCreator(normalizedResults, FETCH_MOVIES, 'FETCH_MOVIES_SUCCESS');
+const fetchMoviesError = (error: Error) => fetchErrorActionCreator(error, FETCH_MOVIES);
 
-const fetchMoviesError = (error: Error): FetchErrorAction => ({
-  type: 'FETCH_MOVIES_ERROR',
-  payload: error,
-  error: true,
-  meta: {
-    stopLoader: FETCH_MOVIES,
-  },
-});
+const fetchFavoritesActionCreator = () => fetchActionCreator(FETCH_FAVORITES);
+const fetchFavoritesSuccess = (normalizedResults: any) =>
+  fetchSuccessActionCreator(normalizedResults, FETCH_FAVORITES, 'FETCH_FAVORITES_SUCCESS');
+const fetchFavoritesError = (error: Error) => fetchErrorActionCreator(error, FETCH_FAVORITES);
 
-const fetchFavoritesActionCreator = (): FetchFavoritesAction => ({
-  type: 'FETCH_FAVORITES',
-  meta: {
-    triggerLoader: FETCH_FAVORITES,
-  },
-});
-
-const fetchFavoritesSuccess = (normalizedResults: any): FetchFavoritesSuccessAction => ({
-  type: 'FETCH_FAVORITES_SUCCESS',
-  payload: normalizedResults.result,
-  meta: {
-    entities: normalizedResults.entities,
-    stopLoader: FETCH_FAVORITES,
-  },
-});
-
-const fetchFavoritesError = (error: Error): FetchFavoritesErrorAction => ({
-  type: 'FETCH_FAVORITES_ERROR',
-  payload: error,
-  error: true,
-  meta: {
-    stopLoader: FETCH_FAVORITES,
-  },
-});
-
-const moviesSchema = new schema.Array(new schema.Entity('movies'));
+const moviesSchema = new schema.Array(
+  new schema.Entity('movies', {
+    comments: commentsSchema,
+  })
+);
 
 export function fetchMovies() {
-  return async (dispatch: Action => any, getState: () => GlobalState): Promise<Movie[]> => {
+  return async (dispatch: Object => any, getState: () => GlobalState): Promise<Movie[]> => {
     dispatch(fetchMoviesActionCreator());
     try {
       const response = await axios('http://localhost:3000/movies');
@@ -139,7 +78,7 @@ export function fetchMovies() {
   };
 }
 export function fetchFavorites() {
-  return async (dispatch: Action => any, getState: () => GlobalState): Promise<Movie[]> => {
+  return async (dispatch: Object => any, getState: () => GlobalState): Promise<Movie[]> => {
     dispatch(fetchFavoritesActionCreator());
     try {
       const response = await axios('http://localhost:3000/users/1/favorites');
@@ -194,16 +133,16 @@ export const movieByIdSelector = (state: GlobalState, id: number): ?Movie =>
   movieMapSelector(state)[id];
 
 export const moviesSelector = createSelector(
-  [movieMapSelector, movieIdsSelector],
-  (entities: MovieMap, ids: number[]) => {
-    return ids.map(id => entities[id]);
+  [allEntitiesSelector, movieIdsSelector],
+  (entities, ids: number[]) => {
+    return denormalize(ids, moviesSchema, entities);
   }
 );
 
 export const favoritesSelector = createSelector(
-  [movieMapSelector, favoritesIdsSelector],
-  (entities: MovieMap, ids: number[]) => {
-    return ids.map(id => entities[id]);
+  [allEntitiesSelector, favoritesIdsSelector],
+  (entities, ids: number[]) => {
+    return denormalize(ids, moviesSchema, entities);
   }
 );
 

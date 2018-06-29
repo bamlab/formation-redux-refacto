@@ -122,7 +122,7 @@ const updateCommentError = (error: Error): UpdateErrorAction => ({
 });
 
 const commentSchema = new schema.Entity('comments');
-const commentsSchema = new schema.Array(commentSchema);
+export const commentsSchema = new schema.Array(commentSchema);
 
 export function updateComment(id: number, text: string) {
   return async (dispatch: Action => any, getState: () => GlobalState): Promise<Comment> => {
@@ -187,7 +187,7 @@ type GlobalState = { [typeof MODULE_KEY]: State };
 const commentMapSelector = (state: GlobalState): CommentMap => entitiesSelector(state, 'comments');
 const commentIdsSelector = (state: GlobalState): number[] => state[MODULE_KEY].list;
 const commentByIdSelector = (state: GlobalState, id: number): ?Comment =>
-  state[MODULE_KEY].entities[id];
+  commentMapSelector(state)[id];
 
 export const commentsSelector = createSelector(
   [commentMapSelector, commentIdsSelector],
