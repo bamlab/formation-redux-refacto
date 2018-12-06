@@ -1,8 +1,7 @@
 // @flow
 import { createSelector } from 'reselect';
 import axios from 'axios';
-import { normalize, schema, denormalize } from 'normalizr';
-import { put, all, takeEvery, call } from 'redux-saga/effects';
+import { schema, denormalize } from 'normalizr';
 import type { Comment } from './Comments';
 import { entitiesSelector, allEntitiesSelector } from './modules/entities';
 import { commentsSchema } from './Comments';

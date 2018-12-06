@@ -2,7 +2,6 @@
 import { createSelector } from 'reselect';
 import axios from 'axios';
 import { normalize, schema } from 'normalizr';
-import { put, all, takeEvery, call } from 'redux-saga/effects';
 import { entitiesSelector } from './modules/entities';
 
 export type User = {
@@ -116,5 +115,3 @@ export const usersSelector = createSelector(
     return ids.map(id => entities[id]);
   }
 );
-
-// SAGAS

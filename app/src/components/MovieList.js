@@ -1,8 +1,7 @@
 // @flow
 import * as React from 'react';
-import { connect } from 'react-redux';
 import Grid from '@material-ui/core/Grid';
-import { moviesSelector, type Movie } from '../stores/Movies';
+import { type Movie } from '../stores/Movies';
 import MovieCard from '../components/MovieCard';
 
 type Props = {
